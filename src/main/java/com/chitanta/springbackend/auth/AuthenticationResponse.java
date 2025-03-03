@@ -1,6 +1,6 @@
 package com.chitanta.springbackend.auth;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.chitanta.springbackend.user.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,16 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthenticationResponse {
-    @JsonProperty("access_token")
-    private String accessToken;
-    @JsonProperty("refresh_token")
-    private String refreshToken;
-    /*
-    @JsonProperty("username")
-    private String username;
-    @JsonProperty("email")
     private String email;
-    @JsonProperty("ROLE")
+    private String firstname;
+    private String lastname;
     private Role role;
-    */
 }

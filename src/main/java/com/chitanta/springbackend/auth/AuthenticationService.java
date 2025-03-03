@@ -7,16 +7,17 @@ import com.chitanta.springbackend.token.TokenType;
 import com.chitanta.springbackend.user.User;
 import com.chitanta.springbackend.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,14 +31,15 @@ public class AuthenticationService {
     private final JWTService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthenticationResponse register(RegisterRequest request) {
+    //TODO: I ll need to change this for PROD, role will be selected manually, everyone will be a user through api registering
+    //TODO: Maybe make an admin dashboard for the app to assign roles
+    public AuthenticationResponse register(RegisterRequest request, HttpServletResponse response) {
         User user = User.builder()
                 .firstname(request.getFirstname())
-                .lastname((request.getLastname()))
+                .lastname(request.getLastname())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
-                //.role(Role.USER) --> activate it once setup is completed
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -45,31 +47,52 @@ public class AuthenticationService {
         String refreshToken = jwtService.generateRefreshToken(savedUser);
         saveUserToken(savedUser, jwtToken);
 
+        // Set cookies
+        //TODO maybe need a mechanism to flush these cookies if they exist (for whatever reason), same in authenticate
+        response.addHeader("Set-Cookie", jwtService.createJwtCookie(jwtToken).toString());
+        response.addHeader("Set-Cookie", jwtService.createRefreshCookie(refreshToken).toString());
+
         return AuthenticationResponse.builder()
-                .accessToken(jwtToken)
-                .refreshToken(refreshToken)
+                .email(savedUser.getEmail())
+                .firstname(savedUser.getFirstname())
+                .lastname(savedUser.getLastname())
+                .role(savedUser.getRole())
                 .build();
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        authenticationManager
-                .authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
-        Map<String, Object> userDetails = new HashMap<>();
-        userDetails.put("role", user.getRole());
-        userDetails.put("firstname", user.getFirstname());
+    public AuthenticationResponse authenticate(AuthenticationRequest request, HttpServletResponse response) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
 
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
         Map<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("user", userDetails);
+        extraClaims.put("role", user.getRole());
+        extraClaims.put("firstname", user.getFirstname());
 
         String jwtToken = jwtService.generateToken(extraClaims, user);
         String refreshToken = jwtService.generateRefreshToken(user);
         revokeAllUserTokens(user);
         saveUserToken(user, jwtToken);
 
+        // Set cookies
+        response.addHeader("Set-Cookie", jwtService.createJwtCookie(jwtToken).toString());
+        response.addHeader("Set-Cookie", jwtService.createRefreshCookie(refreshToken).toString());
+
         return AuthenticationResponse.builder()
-                .accessToken(jwtToken)
-                .refreshToken(refreshToken)
+                .email(user.getEmail())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .role(user.getRole())
+                .build();
+    }
+
+    public AuthenticationResponse checkAuth(User user) {
+        return AuthenticationResponse.builder()
+                .email(user.getEmail())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .role(user.getRole())
                 .build();
     }
 
@@ -96,28 +119,59 @@ public class AuthenticationService {
     }
 
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        final String refreshToken;
-        final String userEmail;
+        final Cookie[] cookies = request.getCookies();
+        if (cookies == null) return;
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return;
-        }
-        refreshToken = authHeader.substring(7);
+        String refreshToken = Arrays.stream(cookies)
+                .filter(cookie -> "refresh_token".equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
 
-        userEmail = jwtService.extractUsername(refreshToken);
+        if (refreshToken == null) return;
+
+        String userEmail = jwtService.extractUsername(refreshToken);
         if (userEmail != null) {
-            User user = this.userRepository.findByEmail(userEmail).orElseThrow();
+            User user = userRepository.findByEmail(userEmail).orElseThrow();
             if (jwtService.isTokenValid(refreshToken, user)) {
                 String accessToken = jwtService.generateToken(user);
                 revokeAllUserTokens(user);
                 saveUserToken(user, accessToken);
+
+                // Set new cookies
+                response.addHeader("Set-Cookie", jwtService.createJwtCookie(accessToken).toString());
+                response.addHeader("Set-Cookie", jwtService.createRefreshCookie(refreshToken).toString());
+
                 AuthenticationResponse authResponse = AuthenticationResponse.builder()
-                        .accessToken(accessToken)
-                        .refreshToken(refreshToken)
+                        .email(user.getEmail())
+                        .firstname(user.getFirstname())
+                        .lastname(user.getLastname())
+                        .role(user.getRole())
                         .build();
                 new ObjectMapper().writeValue(response.getOutputStream(), authResponse);
             }
         }
+    }
+
+    //FIXME Delete for production. only for dev env to populate database
+    public AuthenticationResponse registerWithoutCookies(RegisterRequest request) {
+        User user = User.builder()
+                .firstname(request.getFirstname())
+                .lastname(request.getLastname())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(request.getRole())
+                .build();
+
+        User savedUser = userRepository.save(user);
+        String jwtToken = jwtService.generateToken(user);
+        saveUserToken(savedUser, jwtToken);
+
+        return AuthenticationResponse.builder()
+                .email(savedUser.getEmail())
+                .firstname(savedUser.getFirstname())
+                .lastname(savedUser.getLastname())
+                .role(savedUser.getRole())
+                .build();
     }
 }

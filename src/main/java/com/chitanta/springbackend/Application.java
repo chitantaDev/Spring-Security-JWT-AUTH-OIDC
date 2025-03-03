@@ -11,14 +11,14 @@ import static com.chitanta.springbackend.user.Role.*;
 
 @SpringBootApplication
 public class Application {
-
+	//TODO: refactor all strings and integers out of all methods and make CONSTANTS, too lazy now C:<
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
-	//demon data for dev purposes
+
 	@Bean
 	public CommandLineRunner commandLineRunner(AuthenticationService authService) {
-		return args ->  {
+		return args -> {
 			RegisterRequest admin = RegisterRequest.builder()
 					.firstname("Admin")
 					.lastname("Admin")
@@ -43,11 +43,9 @@ public class Application {
 					.role(USER)
 					.build();
 
-			System.out.println("Admin token: " + authService.register(admin).getAccessToken());
-			System.out.println("Manager token: " + authService.register(manager).getAccessToken());
-			System.out.println("User token: " + authService.register(user).getAccessToken());
-
+			System.out.println("Admin registered: " + authService.registerWithoutCookies(admin).getEmail());
+			System.out.println("Manager registered: " + authService.registerWithoutCookies(manager).getEmail());
+			System.out.println("User registered: " + authService.registerWithoutCookies(user).getEmail());
 		};
 	}
-
 }
