@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Import Spring Boot defaults -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- Console appender with colors -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- File appender for all logs -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>./logs/application.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>./logs/archived/application-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Your application logs - both console and file -->
+    <logger name="com.chitanta.springbackend" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+
+    <!-- SQL logs - file only, not console -->
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="FILE" />
+    </logger>
+
+    <!-- SQL parameter binding logs - file only, not console -->
+    <logger name="org.hibernate.type.descriptor.sql" level="TRACE" additivity="false">
+        <appender-ref ref="FILE" />
+    </logger>
+
+    <!-- Spring Security logs - both console and file -->
+    <logger name="org.springframework.security" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+
+    <!-- Root logger - console only for everything else -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+</configuration>

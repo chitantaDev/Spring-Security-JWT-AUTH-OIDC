@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import static com.chitanta.springbackend.helper.Constants.ACCESS_TOKEN;
+import static com.chitanta.springbackend.helper.Constants.REFRESH_TOKEN;
+
 @Service
 @RequiredArgsConstructor
 public class JWTService {
@@ -55,7 +58,7 @@ public class JWTService {
     }
 
     public ResponseCookie createJwtCookie(String token) {
-        return ResponseCookie.from("access_token", token)
+        return ResponseCookie.from(ACCESS_TOKEN, token)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
@@ -64,7 +67,7 @@ public class JWTService {
     }
 
     public ResponseCookie createRefreshCookie(String token) {
-        return ResponseCookie.from("refresh_token", token)
+        return ResponseCookie.from(REFRESH_TOKEN, token)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")

@@ -1,5 +1,6 @@
 package com.chitanta.springbackend.config;
 
+import com.chitanta.springbackend.logging.RequestLoggingFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 import static com.chitanta.springbackend.user.Permission.*;
 import static com.chitanta.springbackend.user.Role.ADMIN;
@@ -24,11 +26,11 @@ import static org.springframework.http.HttpMethod.*;
 @RequiredArgsConstructor
 @EnableMethodSecurity
 public class SecurityConfiguration {
-    //FIXME strings into constants + this looks scuffed, make it prettier, also uncomplete, no request Matchers for USER
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final TokenRefreshFilter tokenRefreshFilter;
     private final AuthenticationProvider authenticationProvider;
     private final LogoutHandler logoutHandler;
+    private final RequestLoggingFilter requestLoggingFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -55,6 +57,7 @@ public class SecurityConfiguration {
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
+                .addFilterBefore(requestLoggingFilter, SecurityContextHolderFilter.class)
                 .addFilterBefore(tokenRefreshFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout

@@ -11,7 +11,6 @@ import static com.chitanta.springbackend.user.Role.*;
 
 @SpringBootApplication
 public class Application {
-	//TODO: refactor all strings and integers out of all methods and make CONSTANTS, too lazy now C:<
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}

@@ -4,6 +4,7 @@ import com.chitanta.springbackend.user.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -31,11 +32,9 @@ public class AuthenticationController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<AuthenticationResponse> checkAuth(
-            @AuthenticationPrincipal User user
-    ) {
+    public ResponseEntity<AuthenticationResponse> checkAuth(@AuthenticationPrincipal User user) {
         if (user == null) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         return ResponseEntity.ok(authService.checkAuth(user));
     }

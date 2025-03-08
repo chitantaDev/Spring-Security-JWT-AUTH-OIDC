@@ -7,14 +7,21 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
 
+import static com.chitanta.springbackend.helper.Constants.ACCESS_TOKEN;
+import static com.chitanta.springbackend.helper.Constants.REFRESH_TOKEN;
+
+
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class TokenRefreshFilter extends OncePerRequestFilter {
     private final JWTService jwtService;
@@ -23,9 +30,7 @@ public class TokenRefreshFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
+            @NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
         final Cookie[] cookies = request.getCookies();
         if (cookies == null) {
@@ -33,14 +38,15 @@ public class TokenRefreshFilter extends OncePerRequestFilter {
             return;
         }
 
+        //TODO: Repetetive code, mightaswell refactor into a method
         String accessToken = Arrays.stream(cookies)
-                .filter(cookie -> "access_token".equals(cookie.getName()))
+                .filter(cookie -> ACCESS_TOKEN.equals(cookie.getName()))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
 
         String refreshToken = Arrays.stream(cookies)
-                .filter(cookie -> "refresh_token".equals(cookie.getName()))
+                .filter(cookie -> REFRESH_TOKEN.equals(cookie.getName()))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
@@ -71,6 +77,7 @@ public class TokenRefreshFilter extends OncePerRequestFilter {
                             jwtService.createJwtCookie(newAccessToken).toString());
                 }
             } catch (Exception e) {
+                log.error("Failed to generate refresh token for user: {}, error: {}", userEmail, e.getMessage());
                 filterChain.doFilter(request, response);
                 return;
             }

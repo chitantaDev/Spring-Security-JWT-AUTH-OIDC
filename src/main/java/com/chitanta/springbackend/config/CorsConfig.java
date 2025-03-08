@@ -8,14 +8,15 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+import static com.chitanta.springbackend.helper.Constants.ALLOWED_ORIGIN_URL;
+
 @Configuration
 public class CorsConfig {
-    private String allowedOriginURL = "http://localhost:3000";
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOrigins(List.of(allowedOriginURL));
+        corsConfiguration.setAllowedOrigins(List.of(ALLOWED_ORIGIN_URL));
         corsConfiguration.setAllowedHeaders(List.of("*"));
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "PUT"));

@@ -19,6 +19,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static com.chitanta.springbackend.helper.Constants.ACCESS_TOKEN;
+
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -29,10 +31,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            @NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
+            @NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+
         final Cookie[] cookies = request.getCookies();
         final String jwt;
         final String userEmail;
@@ -43,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         jwt = Arrays.stream(cookies)
-                .filter(cookie -> "access_token".equals(cookie.getName()))
+                .filter(cookie -> ACCESS_TOKEN.equals(cookie.getName()))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);

@@ -1,3 +1,5 @@
+debug: true  #auto-configuration report
+
 spring:
   datasource:
     url: ${DB_URL}
@@ -7,7 +9,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -21,3 +23,18 @@ application:
       expiration: ${JWT_EXPIRATION} # 1 day
       refresh-token:
         expiration: ${JWT_REFRESH_EXPIRATION} # 7 days
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
+        boot:
+          autoconfigure: DEBUG
+
+#Spring Boot Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: conditions

@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 
+import static com.chitanta.springbackend.helper.Constants.ACCESS_TOKEN;
+import static com.chitanta.springbackend.helper.Constants.REFRESH_TOKEN;
+
 @Service
 @RequiredArgsConstructor
 public class LogoutService implements LogoutHandler {
@@ -28,7 +31,7 @@ public class LogoutService implements LogoutHandler {
         if (cookies == null) return;
 
         String jwt = Arrays.stream(cookies)
-                .filter(cookie -> "access_token".equals(cookie.getName()))
+                .filter(cookie -> ACCESS_TOKEN.equals(cookie.getName()))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
@@ -43,7 +46,7 @@ public class LogoutService implements LogoutHandler {
         }
 
         // Clear cookies
-        response.addHeader("Set-Cookie", jwtService.createEmptyCookie("access_token").toString());
-        response.addHeader("Set-Cookie", jwtService.createEmptyCookie("refresh_token").toString());
+        response.addHeader("Set-Cookie", jwtService.createEmptyCookie(ACCESS_TOKEN).toString());
+        response.addHeader("Set-Cookie", jwtService.createEmptyCookie(REFRESH_TOKEN).toString());
     }
 }

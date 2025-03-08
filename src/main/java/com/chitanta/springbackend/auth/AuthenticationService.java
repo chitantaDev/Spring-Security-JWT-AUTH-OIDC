@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.chitanta.springbackend.helper.Constants.REFRESH_TOKEN;
+
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -123,7 +125,7 @@ public class AuthenticationService {
         if (cookies == null) return;
 
         String refreshToken = Arrays.stream(cookies)
-                .filter(cookie -> "refresh_token".equals(cookie.getName()))
+                .filter(cookie -> REFRESH_TOKEN.equals(cookie.getName()))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
@@ -153,7 +155,7 @@ public class AuthenticationService {
         }
     }
 
-    //FIXME Delete for production. only for dev env to populate database
+    //TODO Delete for production. only for dev env to populate database
     public AuthenticationResponse registerWithoutCookies(RegisterRequest request) {
         User user = User.builder()
                 .firstname(request.getFirstname())
