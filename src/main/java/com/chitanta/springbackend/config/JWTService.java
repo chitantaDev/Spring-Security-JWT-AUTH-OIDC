@@ -1,6 +1,9 @@
 package com.chitanta.springbackend.config;
 
-import com.chitanta.springbackend.user.UserRepository;
+import com.chitanta.springbackend.token.Token;
+import com.chitanta.springbackend.token.TokenRepository;
+import com.chitanta.springbackend.token.TokenType;
+import com.chitanta.springbackend.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -8,6 +11,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +20,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+
+import static com.chitanta.springbackend.helper.Constants.ACCESS_TOKEN;
+import static com.chitanta.springbackend.helper.Constants.REFRESH_TOKEN;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +34,7 @@ public class JWTService {
     private long jwtExpiration;
     @Value("${application.security.jwt.refresh-token.expiration}")
     private long refreshExpiration;
-    private final UserRepository userRepository;
+    private final TokenRepository tokenRepository;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -50,6 +57,33 @@ public class JWTService {
         return buildToken(new HashMap<>(), userDetails, refreshExpiration);
     }
 
+    public ResponseCookie createJwtCookie(String token) {
+        return ResponseCookie.from(ACCESS_TOKEN, token)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(jwtExpiration)
+                .build();
+    }
+
+    public ResponseCookie createRefreshCookie(String token) {
+        return ResponseCookie.from(REFRESH_TOKEN, token)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(refreshExpiration)
+                .build();
+    }
+
+    public ResponseCookie createEmptyCookie(String name) {
+        return ResponseCookie.from(name, "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0)
+                .build();
+    }
+
     private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
         return Jwts.builder()
                 .setClaims(extraClaims)
@@ -65,8 +99,19 @@ public class JWTService {
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
-    private boolean isTokenExpired(String token) {
+    boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
+    }
+
+    public void saveUserToken(User user, String jwtToken) {
+        Token token = Token.builder()
+                .user(user)
+                .token(jwtToken)
+                .tokenType(TokenType.BEARER)
+                .expired(false)
+                .revoked(false)
+                .build();
+        tokenRepository.save(token);
     }
 
     private Date extractExpiration(String token) {
@@ -81,9 +126,6 @@ public class JWTService {
                 .getBody();
     }
 
-    //todo: automate refreshing & generating secretkey after fixed time period for increased security (when deployed)
-    //fixme: 3rd-Party Secret Management Tools to make it safer
-    //fixme: OIDC-Provider implementation in the future (Keycloak or Azure)
     private Key getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         return Keys.hmacShaKeyFor(keyBytes);

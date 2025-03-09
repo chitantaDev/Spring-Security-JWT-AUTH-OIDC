@@ -32,3 +32,5 @@ build/
 ### VS Code ###
 .vscode/
 INFO.md
+/logs/
+.DS_Store
